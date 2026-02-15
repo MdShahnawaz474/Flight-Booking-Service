@@ -4,6 +4,8 @@ const db = require("../models");
 const { ServerConfig } = require("../config");
 const AppError = require("../utils/errors/appError");
 const { StatusCodes } = require("http-status-codes");
+const { Enums } = require("../utils/common");
+const { CONFIRMED, CANCELLED } = Enums.BOOKING_STATUS;
 
 const bookingRepository = new BookingRepository();
 async function createBooking(data) {
@@ -13,12 +15,8 @@ async function createBooking(data) {
     const flight = await axios.get(
       `${ServerConfig.FLIGHT_BACKEND_URL}/flights/${data.flightId}`,
     );
-    // console.log(typeof flight);
     const flightData = flight.data.data;
     const totalSeats = flightData.totalSeat;
-    // console.log("Seats Requested:", data.noOfSeats);
-    // console.log("Total Seats Available:", totalSeats);
-
     if (data.noOfSeats > totalSeats) {
       throw new AppError("Not enough seats available", StatusCodes.BAD_REQUEST);
     }
@@ -48,6 +46,69 @@ async function createBooking(data) {
   }
 }
 
+async function makePayment(data) {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const bookingDetails = await bookingRepository.get(data.bookingId);
+
+    if (!bookingDetails) {
+      throw new AppError("Booking not found", StatusCodes.NOT_FOUND);
+    }
+
+    if (bookingDetails.status === CANCELLED) {
+      await bookingRepository.update(
+        data.bookingId,
+        {
+          status: CANCELLED ,
+        },
+        transaction,
+      );
+      throw new AppError("The booking has expired", StatusCodes.BAD_REQUEST);
+    }
+    const bookingTime = new Date(bookingDetails.createdAt); //Booking initiated time
+    const currentTime = new Date(); //current time
+
+    if (currentTime - bookingTime > 300000) {
+      throw new AppError("The booking has expired", StatusCodes.BAD_REQUEST);
+    }
+
+    const totalCost = parseInt(data.totalCost);
+    const userId = parseInt(data.userId);
+
+    if (bookingDetails.totalCost !== totalCost) {
+      throw new AppError(
+        "The amount of the payment doesn't match",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+
+    if (bookingDetails.userId !== userId) {
+      throw new AppError(
+        "The user corresponding to the booking doesn't match",
+        StatusCodes.BAD_REQUEST,
+      );
+    }
+
+    // we assume here the payment is succesfull
+
+    const updatedBooking = await bookingRepository.update(
+      data.bookingId,
+      {
+        status: CONFIRMED,
+      },
+      transaction,
+    );
+    await transaction.commit();
+
+    return updatedBooking;
+  } catch (error) {
+    await transaction.rollback();
+    console.log(error); // Added logging
+    throw error;
+  }
+}
+
 module.exports = {
   createBooking,
+  makePayment,
 };

@@ -20,24 +20,19 @@ class CrudRepository {
     if (!response) {
       throw new AppError(
         "Not able to find the resources",
-        StatusCodes.NOT_FOUND
+        StatusCodes.NOT_FOUND,
       );
     }
     return response;
   }
 
   async update(id, data) {
-    const resource = await this.model.findByPk(id);
-
-    if (!resource) {
-      throw new AppError(
-        "Not able to find the resource",
-        StatusCodes.NOT_FOUND
-      );
-    }
-
-    await resource.update(data);
-    return resource;
+    const response = await this.model.update(data, {
+      where: {
+        id: id,
+      },
+    });
+    return response;
   }
 
   async getAll(data) {
@@ -50,7 +45,7 @@ class CrudRepository {
     if (!response) {
       throw new AppError(
         "Not able to find the resources",
-        StatusCodes.NOT_FOUND
+        StatusCodes.NOT_FOUND,
       );
     }
     return response;
