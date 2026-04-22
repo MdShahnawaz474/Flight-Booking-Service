@@ -1,23 +1,23 @@
-'use strict';
-const {Enums} = require("../utils/common");
-const {CONFIRMED, CANCELLED, INTIATED, PENDING} = Enums.BOOKING_STATUS;
+"use strict";
+const { Enums } = require("../utils/common");
+const { CONFIRMED, CANCELLED, INTIATED, PENDING } = Enums.BOOKING_STATUS;
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Bookings', {
+    await queryInterface.createTable("Bookings", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
       },
       flightId: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: false,
       },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: false,
       },
       status: {
         type: Sequelize.ENUM,
@@ -28,23 +28,23 @@ module.exports = {
       noOfSeats: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 1
+        defaultValue: 1,
       },
       totalCost: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        type: Sequelize.DATE,
+      },
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Bookings');
-  }
+    await queryInterface.dropTable("Bookings");
+  },
 };
